@@ -211,7 +211,15 @@ plot(cv.nhlreg$gamlr)
 log(cv.nhlreg$gamlr$lambda)[which.min(AIC(cv.nhlreg$gamlr))]
 which.min(BIC(cv.nhlreg$gamlr))
 
+#compare previous model (CV-1se) vs CV-min selected model
 nhlreg <- gamlr(x, y, verb=TRUE,
     free=1:(ncol(config)+ncol(team)),
     family="binomial", standardize=FALSE)
 Baicc <- coef(nhlreg)[colnames(player),]
+sum(Baicc!=0)
+Bmin <- coef(cv.nhlreg)[colnames(player),]
+sum(Bmin!=0)
+
+#top 10 and bottom 10 players:
+Baicc[order(Baicc,decreasing=TRUE)[1:10]]
+Baicc[order(Baicc)[1:10]]
