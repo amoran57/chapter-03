@@ -173,4 +173,17 @@ xbrand <- sparse.model.matrix(~brand,data=oj)
 xbrand[c(100,200,300),]
 
 #one other thing: size MATTERS. We want to scale our parameters equally, 
-#since the penalties are size-based
+#since the penalties are size-based. We'll scale the cost function by 
+#multiplying Bj by the standard deviation of xj--this ought to scale things
+#pretty evenly, so that our model won't change if (eg) we use Fahrenheit
+#instead of Celsius. This is the default in gamlr, via "standardize=TRUE"
+
+#Using a K-fold Cross Validation technique with lasso sequence, to get best lambda value
+cv.spender <- cv.gamlr(xweb,log(yspend))
+plot(cv.spender)
+
+#observe the difference between CV-min and CV-1se:
+betalse <- coef(cv.spender)
+betamin <-coef(cv.spender, select="min")
+cbind(betalse, betamin) [c("tvguide.com","americanexpress.com"),]
+
