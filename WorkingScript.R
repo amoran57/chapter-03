@@ -187,3 +187,31 @@ betalse <- coef(cv.spender)
 betamin <-coef(cv.spender, select="min")
 cbind(betalse, betamin) [c("tvguide.com","americanexpress.com"),]
 
+#to wrap up, let's look at hockey data and construct a better plus/minus metric
+?hockey
+head(goal)
+hockey <- data(hockey)
+head(goal)
+player[1:3,2:7]
+
+#we run a certain model which accounts for power play
+#and fixed effects for coach, season, etc.
+x <- cbind(config, team, player)
+y <- goal$homegoal
+cv.nhlreg <- cv.gamlr(x,y,verb=TRUE,
+      free=1: (ncol(config)+ncol(team)),
+      family="binomial", standardize=FALSE)
+
+#we plot the regularization paths and the CV experiment:
+par(mfrow=c(1,2))
+plot(cv.nhlreg)
+plot(cv.nhlreg$gamlr)
+
+#compare model selected by AIC vs BIC
+log(cv.nhlreg$gamlr$lambda)[which.min(AIC(cv.nhlreg$gamlr))]
+which.min(BIC(cv.nhlreg$gamlr))
+
+nhlreg <- gamlr(x, y, verb=TRUE,
+    free=1:(ncol(config)+ncol(team)),
+    family="binomial", standardize=FALSE)
+Baicc <- coef(nhlreg)[colnames(player),]
