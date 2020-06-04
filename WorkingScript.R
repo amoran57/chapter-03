@@ -147,3 +147,30 @@ scy <- SC$FAIL # pull out `y' too just for convenience
 # fit a single lasso
 sclasso <- gamlr(scx, scy, family="binomial")
 plot(sclasso) # the ubiquitous path plot
+
+#import OJ data
+oj <- read.csv("oj.csv")
+xbrand <- sparse.model.matrix(~brand, data=oj)
+xbrand[c(100,200,300),]
+#with penalization (eg the lasso path), factor reference levels now matter!
+#we can't just absorb one brand into the intercept--we need 3 dummys for 3 brands
+xnaref <- function(x){
+  if(is.factor(x))
+    if(!is.na(levels(x)[1]))
+      x <- factor(x,levels=c(NA,levels(x)),exclude=NULL)
+    return(x) }
+
+naref <- function(DF){
+  if(is.null(dim(DF))) return(xnaref(DF))
+  if(!is.data.frame(DF)) 
+    stop("You need to give me a data.frame or a factor")
+  DF <- lapply(DF, xnaref)
+  return(as.data.frame(DF))
+}
+#this should fix our factor reference problem!
+oj$brand <- naref(oj$brand)
+xbrand <- sparse.model.matrix(~brand,data=oj)
+xbrand[c(100,200,300),]
+
+#one other thing: size MATTERS. We want to scale our parameters equally, 
+#since the penalties are size-based
