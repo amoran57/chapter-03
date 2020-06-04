@@ -94,3 +94,56 @@ for(k in 1:K){
 ## plot it in plum
 par(mai=c(.9,.9,.1,.1))
 boxplot(OOS, col="plum", ylab="R2", xlab="model", bty="n")
+
+#forward step-wise model:
+null <- glm(FAIL~1, data=SC)
+system.time (fwd <- step(null, scope=formula(full), dir="forward"))
+#this was great, and we got 70 potential models. 
+#BUT, it took 104 seconds to run, on a relatively small dataset
+
+
+#working with lasso technique on the browser data
+
+library(gamlr)
+
+## Browsing History. 
+## The table has three colums: [machine] id, site [id], [# of] visits
+web <- read.csv("browser-domains.csv")
+## Read in the actual website names and relabel site factor
+sitenames <- scan("browser-sites.txt", what="character")
+web$site <- factor(web$site, levels=1:length(sitenames), labels=sitenames)
+## also factor machine id
+web$id <- factor(web$id, levels=1:length(unique(web$id)))
+
+## get total visits per-machine and % of time on each site
+## tapply(a,b,c) does c(a) for every level of factor b.
+machinetotals <- as.vector(tapply(web$visits,web$id,sum)) 
+visitpercent <- 100*web$visits/machinetotals[web$id]
+
+## use this info in a sparse matrix
+## this is something you'll be doing a lot; familiarize yourself.
+xweb <- sparseMatrix(
+  i=as.numeric(web$id), j=as.numeric(web$site), x=visitpercent,
+  dims=c(nlevels(web$id),nlevels(web$site)),
+  dimnames=list(id=levels(web$id), site=levels(web$site)))
+
+## now read in the spending data 
+yspend <- read.csv("browser-totalspend.csv", row.names=1)  # us 1st column as row names
+yspend <- as.matrix(yspend) ## good practice to move from dataframe to matrix
+
+## run a lasso path plot
+spender <- gamlr(xweb, log(yspend), verb=TRUE)
+plot(spender) ## path plot
+
+#we can also use lasso on logistic regressions
+# for gamlr, and most other functions, you need to create your own numeric
+# design matrix.  We'll do this as a sparse `simple triplet matrix' using 
+# the sparse.model.matrix function.
+scx <- sparse.model.matrix(FAIL ~ ., data=SC)[,-1] # do -1 to drop intercept!
+# here, we could have also just done x <- as.matrix(SC[,-1]).
+# but sparse.model.matrix is a good way of doing things if you have factors.
+scy <- SC$FAIL # pull out `y' too just for convenience
+
+# fit a single lasso
+sclasso <- gamlr(scx, scy, family="binomial")
+plot(sclasso) # the ubiquitous path plot
